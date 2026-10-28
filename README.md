@@ -55,7 +55,27 @@ Fetching is browser-direct. A network error mentions possible CORS restrictions 
 - `items`, `itemsForCategory(categoryId)`, and `itemsForFeed(feedId)` expose newest-first selections without fetching. Category membership uses manual feed assignments, including multiple categories per feed. Unknown IDs and empty categories return no items.
 - Overlapping and subsequent `loadOnce` calls reuse the initial load, including after a failure. Page navigation does not trigger refreshes. A full browser reload creates a new store and fetches feeds again; there is no automatic refresh or persistent cache.
 
-The starter page remains until the reader routes and shared cards are implemented in steps 4 and 5.
+## Reader navigation
+
+The responsive Vuetify shell lists categories and feeds in configuration order. On narrow screens, the toolbar menu opens the navigation drawer; selecting a page closes it. Each page filters retained store results and shows its own loading, error, empty, or not-found state.
+
+- `/` displays all feeds.
+- `/categories/:categoryId` displays feeds assigned to one manual category, such as `/categories/news` and `/categories/uk-news`.
+- `/feeds/:feedId` displays one feed, such as `/feeds/the-guardian`.
+
+Unknown IDs and other unmatched paths show a not-found page. Article links open the original URL in a new tab. The shared page currently uses a stock Vuetify item list; full article cards, descriptions, and media rendering belong to step 5.
+
+### Hosting and direct links
+
+Vue Router uses HTML5 history. Configure the production host to serve `dist/index.html` for application routes such as `/categories/news` and `/feeds/the-guardian`, while serving existing assets normally. Without this fallback, opening or refreshing a nested URL may produce a server 404. For example, an Nginx server rooted at `dist/` can use:
+
+```nginx
+location / {
+    try_files $uri $uri/ /index.html;
+}
+```
+
+The Vite development server and `npm run preview` provide SPA fallback locally. Refreshing any reader URL starts the feed load for a fresh application instance.
 
 ## ❗️ Documentation
 

@@ -29,7 +29,7 @@ IDs use lowercase letters and numbers separated by single hyphens, such as `uk-n
 
 Manual categories determine category page membership. Categories supplied by individual RSS items are separate card metadata and do not change the manual categories. For the example above, The Guardian belongs to both News and UK News.
 
-Configuration is validated before the application starts. Invalid configuration stops startup with field-specific errors in the browser console. Run `npm test` to validate the checked-in configuration and exercise the validation rules. Feed fetching and reader pages are covered by later steps in `plans/implementation.md`.
+Configuration is validated before the application starts. Invalid configuration stops startup with field-specific errors in the browser console. Run `npm test` to validate the checked-in configuration and exercise the feed pipeline and store. Reader pages are covered by later steps in `plans/implementation.md`.
 
 The tests use Node's built-in TypeScript support and jsdom; use Node.js 22.22.2+ or 24.15+.
 
@@ -44,7 +44,18 @@ The feed utilities in `src/feeds/` are available for the reader store to consume
 
 Descriptions retain allowlisted HTML formatting through DOMPurify. Links use HTTP(S) destinations and open safely in new tabs. Embedded images and native audio/video controls remain in sanitized descriptions without autoplay; matching enclosure/media URLs are omitted from the separate media array. Other enclosures become typed media or attachment links for the future card component.
 
-Fetching is browser-direct. A network error mentions possible CORS restrictions because browsers do not reliably distinguish those from other network failures. No proxy has been added. The pipeline is not yet connected to application startup; loading state and route-independent storage belong to implementation step 3.
+Fetching is browser-direct. A network error mentions possible CORS restrictions because browsers do not reliably distinguish those from other network failures. No proxy has been added.
+
+## Feed store and startup
+
+`src/main.ts` starts `useFeedStore().loadOnce(feedConfig)` after installing Pinia, without waiting for network requests before mounting the application. The store in `src/stores/feeds.ts` retains the first configuration and all feed results in memory for that application instance.
+
+- `feedStates[feedId]` exposes each feed's loading/success/error status, items, and error. Successful results become available independently while other feeds are still loading.
+- `hasStarted`, `isLoading`, `hasFinished`, and `errors` support overall loading and failure states. Finishing means all feeds have settled, including failures.
+- `items`, `itemsForCategory(categoryId)`, and `itemsForFeed(feedId)` expose newest-first selections without fetching. Category membership uses manual feed assignments, including multiple categories per feed. Unknown IDs and empty categories return no items.
+- Overlapping and subsequent `loadOnce` calls reuse the initial load, including after a failure. Page navigation does not trigger refreshes. A full browser reload creates a new store and fetches feeds again; there is no automatic refresh or persistent cache.
+
+The starter page remains until the reader routes and shared cards are implemented in steps 4 and 5.
 
 ## ❗️ Documentation
 

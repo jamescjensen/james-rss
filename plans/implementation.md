@@ -1,5 +1,7 @@
 # RSS reader implementation plan
 
+All seven implementation steps are complete as of October 28, 2026. Operational setup, configuration, commands, deployment, and known limitations are documented in the [project README](../README.md). Test and live-feed results are recorded in the [verification report](verification.md).
+
 ## Scope and behavior
 
 Build a simple RSS reader using the existing Vue, TypeScript, Vue Router, Pinia, and Vuetify stack.
@@ -91,8 +93,8 @@ Keep the typed configuration loader and validation under `server/config/`, along
 3. Add the Pinia store with one initial load, independent feed results, and route-independent state.
 4. Replace the starter screen with the responsive application shell and all-feeds, category, and feed routes.
 5. Build the shared item list/card and establish global Vuetify defaults and common states.
-6. Verify behavior with representative local feed fixtures and actual configured feeds, including the backend request path, redirect URL preservation, and failure handling.
-7. Update project documentation with configuration, npm commands, deployment routing requirements, and known limitations.
+6. Verify behavior with representative local feed fixtures and actual configured feeds, including the backend request path, redirect URL preservation, and failure handling. Completed October 28, 2026; see [verification results](verification.md).
+7. Update project documentation with configuration, npm commands, deployment routing requirements, and known limitations. Completed October 28, 2026; see the [project README](../README.md).
 
 ## Verification and acceptance criteria
 

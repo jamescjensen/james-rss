@@ -28,6 +28,16 @@ function text (element: Element | undefined): string {
   return element?.textContent?.trim() ?? ''
 }
 
+function decodeTitle (value: string): string {
+  if (!value.includes('&')) {
+    return value
+  }
+  const textarea = document.createElement('textarea')
+  // Escape literal markup before using the browser's entity decoder.
+  textarea.innerHTML = value.replaceAll('<', '&lt;')
+  return textarea.value.trim()
+}
+
 function publicationDate (item: Element): { raw: string, iso: string | null } {
   const candidates = [
     ...children(item, 'pubDate'),
@@ -117,7 +127,7 @@ export function parseFeed (xml: string, feed: FeedDefinition, sourceUrl: string)
   }
   const items = new Map<string, FeedItem>()
   for (const item of children(channel, 'item')) {
-    const title = text(children(item, 'title')[0]) || 'Untitled item'
+    const title = decodeTitle(text(children(item, 'title')[0])) || 'Untitled item'
     const link = children(item, 'link')[0]
     const guidElement = children(item, 'guid')[0]
     const guid = text(guidElement)

@@ -39,6 +39,20 @@ test('allows empty configuration and uncategorized feeds', () => {
   assert.deepEqual(validateFeedConfig(input), input)
 })
 
+test('preserves an optional bias label and omits it when not configured', () => {
+  const input = config()
+  const result = validateFeedConfig({ ...input, feeds: [{ ...input.feeds[0], id: 'with-bias', bias: 'Custom label' }, ...input.feeds] })
+  assert.equal(result.feeds[0]!.bias, 'Custom label')
+  assert.equal(Object.hasOwn(result.feeds[1]!, 'bias'), false)
+})
+
+test('rejects empty, padded, or non-string bias labels', () => {
+  const input = config()
+  for (const bias of ['', ' ', ' padded', 'padded ', null, 42, false]) {
+    assert.throws(() => validateFeedConfig({ ...input, feeds: [{ ...input.feeds[0], bias }] }), /feeds\[0\].bias/)
+  }
+})
+
 test('rejects invalid configuration shapes', () => {
   for (const input of [null, [], 'feeds', {}, { categories: [], feeds: {} }, { categories: [null], feeds: [null] }]) {
     assert.throws(() => validateFeedConfig(input), /Invalid feed configuration/)

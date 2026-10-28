@@ -47,6 +47,26 @@ test('normalizes XML, CDATA, item categories, dates, and inherited XML bases', (
   })
 })
 
+test('decodes named and numeric HTML entities in headlines after XML parsing', () => {
+  const xml = wrap(`<item><title><![CDATA[Ukraine&apos;s Zelenskyy says territory recaptured, forces on the offensive ]]></title></item>
+    <item><title><![CDATA[&quot;Talks&quot; &amp; aid &#39;continue&#39; &#x2014; today]]></title></item>
+    <item><title>Ukraine&amp;apos;s &amp;quot;offensive&amp;quot;</title></item>
+    <item><title><![CDATA[AT&T and plain apostrophes aren't changed]]></title></item>
+    <item><title><![CDATA[&nbsp;]]></title></item>`)
+  assert.deepEqual(parseFeed(xml, feed, feed.url).map(item => item.title), [
+    'Ukraine\'s Zelenskyy says territory recaptured, forces on the offensive',
+    '"Talks" & aid \'continue\' — today',
+    'Ukraine\'s "offensive"',
+    'AT&T and plain apostrophes aren\'t changed',
+    'Untitled item',
+  ])
+})
+
+test('decodes headlines as text without interpreting encoded or literal markup', () => {
+  const xml = wrap(`<item><title><![CDATA[&lt;img src=x onerror=alert(1)&gt; &amp; <b>text</b> </textarea>]]></title></item>`)
+  assert.equal(parseFeed(xml, feed, feed.url)[0]!.title, '<img src=x onerror=alert(1)> & <b>text</b> </textarea>')
+})
+
 test('extracts enclosure and namespace media without repeating embedded images/audio', () => {
   const [item] = parseFeed(fixture, feed, feed.url)
   assert.deepEqual(item!.media, [

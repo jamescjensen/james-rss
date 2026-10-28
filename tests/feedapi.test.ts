@@ -29,6 +29,19 @@ test('publishes navigation metadata without upstream URLs or fetching any feeds'
   })
 })
 
+test('includes configured bias in public metadata without adding it to other feeds', async () => {
+  const handler = createFeedHandler({
+    ...config,
+    feeds: [{ ...config.feeds[0]!, id: 'with-bias', bias: 'Custom label' }, ...config.feeds],
+  })
+  const response = await handler(request('/api/config'))
+  const body = await response.json()
+  assert.deepEqual(body.feeds, [
+    { id: 'with-bias', name: 'The Guardian', categoryIds: [], bias: 'Custom label' },
+    { id: 'guardian', name: 'The Guardian', categoryIds: [] },
+  ])
+})
+
 test('fetches only the configured URL, forwards no credentials, and exposes the final URL', async () => {
   let calls = 0
   const handler = createFeedHandler(config, { fetch: async (url, options) => {

@@ -68,6 +68,7 @@ export function validateFeedConfig (value: unknown): ServerFeedConfig {
 
       const id = uniqueId(feed.id, `${path}.id`, feedIds)
       const name = requiredString(feed.name, `${path}.name`)
+      const bias = feed.bias === undefined ? undefined : requiredString(feed.bias, `${path}.bias`)
       const url = requiredString(feed.url, `${path}.url`)
       if (url) {
         try {
@@ -100,7 +101,7 @@ export function validateFeedConfig (value: unknown): ServerFeedConfig {
         errors.push(`${path}.categoryIds must be an array (use [] for an uncategorized feed)`)
       }
 
-      feeds.push({ id, name, url, categoryIds: assignedCategories })
+      feeds.push({ id, name, url, categoryIds: assignedCategories, ...(bias === undefined ? {} : { bias }) })
     }
   } else {
     errors.push('feeds must be an array')

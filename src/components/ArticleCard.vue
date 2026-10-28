@@ -4,6 +4,7 @@
       <header>
         <p class="article-meta">
           <span>{{ feedName }}</span>
+          <span v-if="feedBias" class="article-bias"> · {{ feedBias }}</span>
           <span aria-hidden="true"> · </span>
           <time v-if="publicationDate" :datetime="publicationDate.toISOString()">{{ publicationDate.toLocaleString() }}</time>
           <span v-else>Publication date unknown</span>
@@ -26,18 +27,18 @@
         </h2>
       </header>
 
-      <!-- Only HTML produced by the feed sanitizer is accepted here. -->
-      <div v-if="item.sanitizedDescription" class="article-description" v-html="item.sanitizedDescription" />
-
-      <div v-if="item.media.length > 0" class="article-media-list">
-        <ArticleMedia v-for="media in item.media" :key="media.url" :media="media" />
-      </div>
-
       <ul v-if="item.categories.length > 0" aria-label="RSS categories" class="article-categories">
         <li v-for="category in item.categories" :key="category">
           <v-chip>{{ category }}</v-chip>
         </li>
       </ul>
+
+      <div v-if="item.media.length > 0" class="article-media-list">
+        <ArticleMedia v-for="media in item.media" :key="media.url" :media="media" />
+      </div>
+
+      <!-- Only HTML produced by the feed sanitizer is accepted here. -->
+      <div v-if="item.sanitizedDescription" class="article-description" v-html="item.sanitizedDescription" />
 
       <p v-if="!articleUrl" class="article-meta">Article link unavailable</p>
     </div>
@@ -50,7 +51,7 @@
   import { httpUrl } from '@/feeds/url'
   import ArticleMedia from './ArticleMedia.vue'
 
-  const props = defineProps<{ item: FeedItem, feedName: string }>()
+  const props = defineProps<{ item: FeedItem, feedName: string, feedBias?: string }>()
   const titleId = useId()
   const articleUrl = computed(() => httpUrl(props.item.articleUrl))
   const publicationDate = computed(() => {

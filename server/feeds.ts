@@ -52,7 +52,9 @@ export function createFeedHandler (config: ServerFeedConfig, options: ProxyOptio
   const feeds = new Map(config.feeds.map(feed => [feed.id, { ...feed }]))
   const publicConfig: FeedConfig = {
     categories: config.categories.map(({ id, name }) => ({ id, name })),
-    feeds: config.feeds.map(({ id, name, categoryIds }) => ({ id, name, categoryIds: [...categoryIds] })),
+    feeds: config.feeds.map(({ id, name, categoryIds, bias }) => ({
+      id, name, categoryIds: [...categoryIds], ...(bias === undefined ? {} : { bias }),
+    })),
   }
   const timeoutMs = options.timeoutMs ?? 10_000
   const maxBytes = options.maxBytes ?? 5 * 1024 * 1024

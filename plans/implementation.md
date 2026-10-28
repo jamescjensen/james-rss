@@ -36,10 +36,11 @@ Keep the typed configuration loader and validation under `server/config/`, along
 ```
 
 - Use stable IDs for route parameters and category references.
-- Validate configuration only on the server. Expose category IDs/names and feed IDs/names/category assignments through `/api/config`; do not include upstream feed URLs in the frontend model or bundle.
+- Validate configuration only on the server. Expose category IDs/names and feed IDs/names/category assignments plus any optional bias labels through `/api/config`; do not include upstream feed URLs in the frontend model or bundle.
 - Validate unique category/feed IDs, required names, HTTP(S) feed URLs, and category references. Report configuration errors clearly.
 - Allow multiple categories per feed and feeds with no categories. Uncategorized feeds still appear on the all-feeds and individual-feed pages.
 - Keep manually assigned categories separate from item categories supplied by RSS. Manual categories determine page membership; RSS categories are card metadata.
+- Allow an optional, manually defined non-empty `bias` string per feed and show it beside the source name on article cards when present.
 - Normalize items into a shared TypeScript model containing a stable item ID, feed ID, title, article URL, sanitized description, publication date, media attachments, and feed-provided item categories.
 - Preserve item identity within its feed, preferring a feed GUID and falling back to a deterministic combination of available item fields. Remove repeated entries within a feed; do not merge independently published entries across feeds.
 

@@ -9,13 +9,15 @@
       "id": "the-guardian",
       "name": "The Guardian",
       "url": "https://www.theguardian.com/uk/rss",
-      "categoryIds": ["news", "uk-news"]
+      "categoryIds": ["news", "uk-news"],
+      "bias": "Center-Left"
     },
     {
       "id": "korea-herald",
       "name": "Korea Herald",
       "url": "https://www.koreaherald.com/rss/newsAll",
-      "categoryIds": ["news", "korean-news"]
+      "categoryIds": ["news", "korean-news"],
+      "bias": "Center-Right"
     }
   ]
 }

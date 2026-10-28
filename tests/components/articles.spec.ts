@@ -34,6 +34,31 @@ test('renders item metadata and a real, safely opened article link without wrapp
   expect(wrapper.attributes('aria-labelledby')).toBe(wrapper.get('h2').attributes('id'))
 })
 
+test('shows configured bias beside the source, renders it as text, and omits absent labels', () => {
+  const wrapper = mount(ArticleList, {
+    props: {
+      items: [item(), item({ id: 'other-story', feedId: 'other' })],
+      feeds: [
+        { id: 'guardian', name: 'The Guardian', categoryIds: [], bias: '<b>Custom label</b>' },
+        { id: 'other', name: 'Other feed', categoryIds: [] },
+      ],
+    },
+    global: { plugins: plugins() },
+  })
+  const cards = wrapper.findAll('article')
+  expect(cards[0]!.get('header .article-meta').text()).toContain('The Guardian · Bias: <b>Custom label</b>')
+  expect(cards[0]!.find('.article-bias b').exists()).toBe(false)
+  expect(cards[1]!.find('.article-bias').exists()).toBe(false)
+})
+
+test('renders decoded headline markup literally instead of creating HTML elements', () => {
+  const title = '<img src=x onerror=alert(1)> Ukraine\'s "offensive"'
+  const wrapper = mount(ArticleCard, { props: { item: item({ title }), feedName: 'Korea Herald' }, global: { plugins: plugins() } })
+  expect(wrapper.get('h2').text()).toContain(title)
+  expect(wrapper.get('a.article-link').attributes('aria-label')).toBe(`${title} (opens in a new tab)`)
+  expect(wrapper.find('h2 img, h2 [onerror]').exists()).toBe(false)
+})
+
 test('keeps description links and native controls independent from the primary article link', async () => {
   const description = sanitizeDescription(`
     <p>Safe <strong>formatting</strong><script>alert(1)</script></p>

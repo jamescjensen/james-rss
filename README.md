@@ -47,6 +47,8 @@ Edit [server/config/feeds.json](server/config/feeds.json). Configuration loading
 
 To add a category, append an object with an `id` and display `name` to `categories`. To add a feed, append an object with an `id`, display `name`, absolute HTTP(S) `url`, and `categoryIds` array to `feeds`.
 
+Feeds may also include an optional `bias` string, such as `"bias": "Custom label"`. When supplied, it appears beside the source name on every article card. Omit the field to hide the label. Labels are manually defined, non-empty text and must not contain surrounding whitespace.
+
 - IDs contain lowercase letters and numbers separated by single hyphens, such as `uk-news`. Keep IDs stable because URLs use them.
 - Category IDs must be unique within categories; feed IDs must be unique within feeds.
 - Names must be non-empty. IDs, names, and URLs must not have surrounding whitespace.
@@ -57,7 +59,7 @@ Manual categories determine page membership. The example feed appears on both Ne
 
 The API validates configuration before listening. Invalid configuration stops API startup with field-specific errors in the server logs. In development, the API watches configuration changes automatically. In production, restart the API after editing configuration. Refresh the browser to receive the updated list; configuration changes require no frontend rebuild.
 
-The frontend receives only category IDs/names and feed IDs/names/category assignments from `/api/config`. Upstream feed URLs and the configuration validator are not bundled into the frontend. Each feed response supplies its upstream base URL separately for resolving article and media links.
+The frontend receives category IDs/names and feed IDs/names/category assignments plus any configured bias labels from `/api/config`. Upstream feed URLs and the configuration validator are not bundled into the frontend. Each feed response supplies its upstream base URL separately for resolving article and media links.
 
 ## Reader behavior
 
@@ -73,7 +75,7 @@ Dates display in the browser's locale and timezone. Missing or invalid dates sor
 
 Descriptions retain allowlisted HTML through DOMPurify. Each item displays at most one image: the first valid description image, or the first image attachment if there is no description image. Additional images and size variants are omitted. Images load lazily. Audio/video use native controls without autoplay; unsupported attachments and failed media provide external links. Missing metadata is handled without inventing publication dates or article destinations.
 
-Every view uses shared `ArticleList`, `ArticleCard`, and `ArticleMedia` components. [Component defaults](src/plugins/defaults.ts) standardize Vuetify buttons, cards, chips, alerts, and progress indicators. [Global styles](src/styles/main.scss) provide shared layout, typography, media sizing, and focus indicators.
+Every view uses shared `ArticleList`, `ArticleCard`, and `ArticleMedia` components. Cards appear in three columns on wide screens (1145px and above), two columns on medium screens (600–1144px), and one column on phones. Items retain their newest-first order across each row. [Component defaults](src/plugins/defaults.ts) standardize Vuetify buttons, cards, chips, alerts, and progress indicators. [Global styles](src/styles/main.scss) provide shared layout, typography, media sizing, and focus indicators.
 
 ## API and loading
 

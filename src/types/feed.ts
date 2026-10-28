@@ -6,6 +6,7 @@ export interface FeedCategory {
 export interface FeedDefinition {
   id: string
   name: string
+  bias?: string
   categoryIds: string[]
 }
 

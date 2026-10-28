@@ -1,7 +1,11 @@
 <template>
   <ol class="article-list">
     <li v-for="item in items" :key="item.id">
-      <ArticleCard :feed-name="feedNames.get(item.feedId) ?? item.feedId" :item="item" />
+      <ArticleCard
+        :feed-bias="feedsById.get(item.feedId)?.bias"
+        :feed-name="feedsById.get(item.feedId)?.name ?? item.feedId"
+        :item="item"
+      />
     </li>
   </ol>
 </template>
@@ -12,5 +16,5 @@
   import ArticleCard from './ArticleCard.vue'
 
   const props = defineProps<{ items: readonly FeedItem[], feeds: readonly FeedDefinition[] }>()
-  const feedNames = computed(() => new Map(props.feeds.map(feed => [feed.id, feed.name])))
+  const feedsById = computed(() => new Map(props.feeds.map(feed => [feed.id, feed])))
 </script>

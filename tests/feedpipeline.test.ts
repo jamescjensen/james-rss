@@ -53,12 +53,56 @@ test('extracts enclosure and namespace media without repeating embedded images/a
     { url: 'https://example.com/news/stories/report.pdf', type: 'attachment', mimeType: 'application/pdf' },
     { url: 'https://example.com/news/media/film.mp4', type: 'video', mimeType: 'video/mp4', title: 'Film' },
     { url: 'https://example.com/news/stories/podcast.ogg', type: 'audio' },
-    { url: 'https://example.com/news/media/film.jpg', type: 'image' },
   ])
   assert.match(item!.sanitizedDescription, /src="https:\/\/example.com\/news\/stories\/cover.jpg"/)
   assert.match(item!.sanitizedDescription, /controls=""/)
   assert.match(item!.sanitizedDescription, /preload="none"/)
   assert.doesNotMatch(item!.sanitizedDescription, /autoplay/)
+})
+
+test('keeps only the first description image and preserves other media types', () => {
+  const xml = wrap(`<item><description><![CDATA[
+    <img src="javascript:alert(1)"><p>Summary</p>
+    <img src="/photo.jpg?width=140"><img src="/photo.jpg?width=600">
+    <audio src="/clip.mp3"></audio>
+  ]]></description>
+    <enclosure url="https://example.com/photo.jpg?width=900" type="image/jpeg"/>
+    <enclosure url="https://example.com/video.mp4" type="video/mp4"/>
+    <enclosure url="https://example.com/report.pdf" type="application/pdf"/>
+  </item>`)
+  const [item] = parseFeed(xml, feed, feed.url)
+  const html = new browser.window.DOMParser().parseFromString(item!.sanitizedDescription, 'text/html')
+  assert.equal(html.querySelectorAll('img').length, 1)
+  assert.equal(html.querySelector('img')!.getAttribute('src'), 'https://example.com/photo.jpg?width=140')
+  assert.equal(html.querySelectorAll('audio').length, 1)
+  assert.deepEqual(item!.media.map(media => media.type), ['video', 'attachment'])
+})
+
+test('keeps only the first image attachment when the description has no usable image', () => {
+  const xml = wrap(`<item>
+    <description><![CDATA[<p>Summary</p><img src="javascript:alert(1)">]]></description>
+    <enclosure url="https://example.com/photo.jpg?width=140" type="image/jpeg"/>
+    <enclosure url="https://example.com/clip.mp3" type="audio/mpeg"/>
+    <enclosure url="https://example.com/photo.jpg?width=600" type="image/jpeg"/>
+    <enclosure url="https://example.com/video.mp4" type="video/mp4"/>
+  </item>`)
+  const [item] = parseFeed(xml, feed, feed.url)
+  assert.deepEqual(item!.media.map(media => media.type), ['image', 'audio', 'video'])
+  assert.equal(item!.media[0]!.url, 'https://example.com/photo.jpg?width=140')
+  assert.doesNotMatch(item!.sanitizedDescription, /<img/)
+})
+
+test('recognizes common media extensions when publishers omit media types', () => {
+  const xml = `<rss xmlns:m="http://search.yahoo.com/mrss/"><channel><item>
+    <m:content url="https://example.com/photo.JPG?width=140"/>
+    <m:content url="https://example.com/recording.mp3"/>
+    <m:content url="https://example.com/video.webm"/>
+    <m:content url="https://example.com/document.pdf"/>
+    <m:content url="https://example.com/declared.jpg" type="application/pdf"/>
+  </item></channel></rss>`
+  assert.deepEqual(parseFeed(xml, feed, feed.url)[0]!.media.map(media => media.type), [
+    'image', 'audio', 'video', 'attachment', 'attachment',
+  ])
 })
 
 test('sanitizes active content, unsafe URLs, attributes, SVG, and link targets', () => {
@@ -79,7 +123,7 @@ test('sanitizes active content, unsafe URLs, attributes, SVG, and link targets',
   assert.equal(link.getAttribute('href'), 'https://example.com/article')
   assert.equal(link.getAttribute('target'), '_blank')
   assert.equal(link.getAttribute('rel'), 'noopener noreferrer')
-  assert.equal(document.querySelector('img')!.hasAttribute('src'), false)
+  assert.equal(document.querySelector('img'), null)
   assert.equal(document.querySelector('video')!.hasAttribute('poster'), false)
   assert.equal(document.querySelector('video')!.hasAttribute('controls'), true)
   assert.deepEqual([...result.embeddedMediaUrls], ['https://example.com/video.mp4'])

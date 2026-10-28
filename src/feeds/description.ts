@@ -4,6 +4,7 @@ import { httpUrl } from './url.ts'
 export function sanitizeDescription (html: string, base: string): {
   html: string
   embeddedMediaUrls: Set<string>
+  hasImage: boolean
 } {
   // A dedicated instance keeps each item's URL base and hooks isolated.
   const purifier = createDOMPurify(window)
@@ -41,6 +42,14 @@ export function sanitizeDescription (html: string, base: string): {
     ALLOW_ARIA_ATTR: false,
     RETURN_DOM_FRAGMENT: true,
   })
+  let hasImage = false
+  for (const image of fragment.querySelectorAll('img')) {
+    if (!image.hasAttribute('src') || hasImage) {
+      image.remove()
+    } else {
+      hasImage = true
+    }
+  }
   const embeddedMediaUrls = new Set<string>()
   for (const element of fragment.querySelectorAll('img[src], audio[src], video[src], audio source[src], video source[src]')) {
     const url = element.getAttribute('src')
@@ -50,5 +59,5 @@ export function sanitizeDescription (html: string, base: string): {
   }
   const container = document.createElement('div')
   container.append(fragment)
-  return { html: container.innerHTML, embeddedMediaUrls }
+  return { html: container.innerHTML, embeddedMediaUrls, hasImage }
 }

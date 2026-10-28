@@ -1,7 +1,8 @@
 {
   "categories": [
     { "id": "news", "name": "News" },
-    { "id": "uk-news", "name": "UK News" }
+    { "id": "uk-news", "name": "UK News" },
+    { "id": "korean-news", "name": "Korean News" }
   ],
   "feeds": [
     {
@@ -9,6 +10,12 @@
       "name": "The Guardian",
       "url": "https://www.theguardian.com/uk/rss",
       "categoryIds": ["news", "uk-news"]
+    },
+    {
+      "id": "korea-herald",
+      "name": "Korea Herald",
+      "url": "https://www.koreaherald.com/rss/newsAll",
+      "categoryIds": ["news", "korean-news"]
     }
   ]
 }

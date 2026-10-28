@@ -5,10 +5,12 @@
  */
 
 import { createVuetify } from 'vuetify'
+import { componentDefaults } from './defaults'
 import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
 
 export default createVuetify({
+  defaults: componentDefaults,
   theme: {
     defaultTheme: 'system',
     utilities: false,

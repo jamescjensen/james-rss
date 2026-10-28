@@ -11,7 +11,6 @@
       :text="store.configError"
       title="Reader unavailable"
       type="error"
-      variant="tonal"
     />
 
     <template v-else>
@@ -48,31 +47,13 @@
           class="reader-section"
           :title="allFailed ? 'Feeds unavailable' : 'Some feeds could not load'"
           :type="allFailed ? 'error' : 'warning'"
-          variant="tonal"
         >
           <ul>
             <li v-for="error in errors" :key="error.feedId">{{ error.message }}</li>
           </ul>
         </v-alert>
 
-        <v-list v-if="items.length > 0" lines="two">
-          <v-list-item
-            v-for="item in items"
-            :key="item.id"
-            :append-icon="item.articleUrl ? 'mdi-open-in-new' : undefined"
-            :href="item.articleUrl ?? undefined"
-            :rel="item.articleUrl ? 'noopener noreferrer' : undefined"
-            :target="item.articleUrl ? '_blank' : undefined"
-          >
-            <v-list-item-title class="reader-item-title">{{ item.title }}</v-list-item-title>
-
-            <v-list-item-subtitle>
-              {{ feedName(item.feedId) }} ·
-              <time v-if="item.publishedAt" :datetime="item.publishedAt">{{ formatDate(item.publishedAt) }}</time>
-              <span v-else>Publication date unknown</span>
-            </v-list-item-subtitle>
-          </v-list-item>
-        </v-list>
+        <ArticleList v-if="items.length > 0" :feeds="feeds" :items="items" />
 
         <v-empty-state
           v-else-if="!isLoading && !allFailed"
@@ -87,6 +68,7 @@
 
 <script lang="ts" setup>
   import type { ReaderView } from '@/composables/reader'
+  import ArticleList from '@/components/ArticleList.vue'
   import { useReaderPage } from '@/composables/reader'
   import { useFeedStore } from '@/stores/feeds'
 
@@ -96,12 +78,4 @@
     () => props.view,
     () => props.id,
   )
-
-  function feedName (feedId: string): string {
-    return store.config.feeds.find(feed => feed.id === feedId)?.name ?? feedId
-  }
-
-  function formatDate (date: string): string {
-    return new Date(date).toLocaleString()
-  }
 </script>

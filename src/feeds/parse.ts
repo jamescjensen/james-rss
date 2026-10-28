@@ -43,7 +43,7 @@ function publicationDate (item: Element): { raw: string, iso: string | null } {
   return { raw: candidates[0] ?? '', iso: null }
 }
 
-function mediaType (mimeType: string, medium: string): FeedMedia['type'] {
+function mediaType (mimeType: string, medium: string, url: string): FeedMedia['type'] {
   for (const candidate of [mimeType.split('/', 1)[0], medium]) {
     switch (candidate) {
       case 'image':
@@ -53,10 +53,23 @@ function mediaType (mimeType: string, medium: string): FeedMedia['type'] {
       }
     }
   }
+  // Some RSS publishers supply media URLs without either MIME type or medium.
+  if (!mimeType) {
+    const path = new URL(url).pathname.toLowerCase()
+    if (/\.(?:avif|bmp|gif|jpe?g|png|svg|tiff?|webp)$/.test(path)) {
+      return 'image'
+    }
+    if (/\.(?:aac|flac|m4a|mp3|oga|ogg|opus|wav)$/.test(path)) {
+      return 'audio'
+    }
+    if (/\.(?:m4v|mov|mp4|ogv|webm)$/.test(path)) {
+      return 'video'
+    }
+  }
   return 'attachment'
 }
 
-function extractMedia (item: Element, base: string, embedded: Set<string>): FeedMedia[] {
+function extractMedia (item: Element, base: string, embedded: Set<string>, hasImage: boolean): FeedMedia[] {
   const media = new Map<string, FeedMedia>()
   const elements = [
     ...children(item, 'enclosure'),
@@ -71,9 +84,16 @@ function extractMedia (item: Element, base: string, embedded: Set<string>): Feed
     const mimeType = element.getAttribute('type')?.trim().toLowerCase() ?? ''
     const medium = element.localName === 'thumbnail' ? 'image' : element.getAttribute('medium') ?? ''
     const title = text(children(element, 'title', MEDIA_NAMESPACE)[0])
+    const type = mediaType(mimeType, medium, url)
+    if (type === 'image') {
+      if (hasImage) {
+        continue
+      }
+      hasImage = true
+    }
     media.set(url, {
       url,
-      type: mediaType(mimeType, medium),
+      type,
       ...(mimeType ? { mimeType } : {}),
       ...(title ? { title } : {}),
     })
@@ -122,7 +142,7 @@ export function parseFeed (xml: string, feed: FeedDefinition, sourceUrl: string)
       articleUrl,
       sanitizedDescription: description.html,
       publishedAt: date.iso,
-      media: extractMedia(item, sourceUrl, description.embeddedMediaUrls),
+      media: extractMedia(item, sourceUrl, description.embeddedMediaUrls, description.hasImage),
       categories: [...new Set(children(item, 'category').map(category => text(category)).filter(Boolean))],
     })
   }

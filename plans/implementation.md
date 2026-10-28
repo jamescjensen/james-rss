@@ -75,6 +75,7 @@ Keep the typed configuration loader and validation under `server/config/`, along
 
 - Implement one shared item card used on every page. Include the feed name as source context, especially for combined lists.
 - Show the title, sanitized description, readable publication date, available media, and RSS item categories. Omit absent descriptions/media/categories gracefully and label unknown dates explicitly.
+- Render at most one image per item: the first usable image in the description, or the first image attachment if the description contains none. Omit additional image variants while preserving audio, video, and other attachments.
 - Expose the exact timestamp in a semantic `time` element when a valid date exists; display dates in the browser's locale and timezone.
 - Make the card's primary article action a real link with `target="_blank"` and `rel="noopener noreferrer"`, supporting keyboard activation and browser link actions.
 - Make non-interactive card areas activate that article link. Keep description links and media controls independently usable; prevent them from accidentally activating the card. Avoid nested anchors and provide a visible focus indicator.

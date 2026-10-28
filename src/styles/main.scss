@@ -39,8 +39,166 @@
     color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
   }
 
-  .reader-item-title {
-    white-space: normal;
+  .article-list {
+    display: grid;
+    gap: 24px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .article-card {
+    position: relative;
+    isolation: isolate;
+
+    &:focus-within {
+      outline: 2px solid rgb(var(--v-theme-primary));
+      outline-offset: 3px;
+    }
+  }
+
+  .article-body {
+    display: grid;
+    gap: 16px;
+    padding: 24px;
+  }
+
+  .article-title {
+    margin-top: 8px;
+    font-size: 1.25rem;
+    line-height: 1.4;
+    font-weight: 500;
     overflow-wrap: anywhere;
+  }
+
+  .article-meta, .article-media figcaption {
+    font-size: .875rem;
+    line-height: 1.5;
+    color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+    overflow-wrap: anywhere;
+  }
+
+  .article-link {
+    color: inherit;
+    text-decoration: none;
+
+    // A real link covers the card without wrapping other links or media controls.
+    &::after {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      content: '';
+    }
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    &:focus-visible {
+      outline: none;
+    }
+  }
+
+  .article-description {
+    min-width: 0;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+
+    > * + * {
+      margin-top: 12px;
+    }
+
+    ul, ol {
+      padding-left: 24px;
+    }
+
+    ul { list-style: disc; }
+    ol { list-style: decimal; }
+
+    h2, h3, h4 { font-weight: 600; }
+    h2 { font-size: 1.25rem; }
+    h3 { font-size: 1.125rem; }
+
+    blockquote {
+      padding-left: 16px;
+      border-left: 3px solid rgba(var(--v-theme-on-surface), .25);
+    }
+
+    pre, table {
+      display: block;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    pre { white-space: pre-wrap; }
+
+    th, td {
+      padding: 8px;
+      border: 1px solid rgba(var(--v-theme-on-surface), .25);
+    }
+  }
+
+  .article-media-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    align-items: start;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .article-media {
+    min-width: 0;
+    margin: 0;
+
+    figcaption { margin-top: 8px; }
+  }
+
+  .article-media-wide {
+    grid-column: 1 / -1;
+  }
+
+  .article-description, .article-media {
+    img, video {
+      display: block;
+      width: auto;
+      max-width: 100%;
+      max-height: 420px;
+      height: auto;
+      object-fit: contain;
+    }
+
+    audio { width: 100%; }
+
+    // Keep links and native controls above the card's stretched article link.
+    a[href], audio, video {
+      position: relative;
+      z-index: 2;
+    }
+
+    a[href] {
+      color: rgb(var(--v-theme-primary));
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+  }
+
+  .reader-page a:not(.article-link):focus-visible {
+    outline: 2px solid rgb(var(--v-theme-primary));
+    outline-offset: 3px;
+  }
+
+  .article-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0;
+    list-style: none;
+
+    .v-chip { max-width: 100%; height: auto; min-height: 26px; }
+    .v-chip__content { white-space: normal; overflow-wrap: anywhere; }
+  }
+
+  @media (max-width: 599px) {
+    .reader-page, .article-body { padding: 16px; }
+    .article-list { gap: 16px; }
   }
 }

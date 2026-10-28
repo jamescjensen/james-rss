@@ -42,7 +42,7 @@ All frontend requests to the backend live in `src/api/`: `config.ts` loads publi
 - `parseFeed(xml, feed, sourceUrl)` parses RSS 0.9x/2.0 XML using the API-supplied upstream base URL. Atom and RDF feeds return an explicit unsupported-format error. Item identity uses GUIDs when supplied and otherwise a deterministic combination of item fields; repeated identities are removed within a feed.
 - `sortFeedItems(items, feeds)` returns a new newest-first array. Missing/invalid dates sort last; equal dates use feed configuration order followed by the original item order. Keep each feed's parsed item order when combining results.
 
-Descriptions retain allowlisted HTML formatting through DOMPurify. Links use HTTP(S) destinations and open safely in new tabs. Embedded images and native audio/video controls remain in sanitized descriptions without autoplay; matching enclosure/media URLs are omitted from the separate media array. Other enclosures become typed media or attachment links for the future card component.
+Descriptions retain allowlisted HTML formatting through DOMPurify. Links use HTTP(S) destinations and open safely in new tabs. Embedded images and native audio/video controls remain in sanitized descriptions without autoplay; matching enclosure/media URLs are omitted from the separate media array. Other enclosures become typed media or attachment links. Common file extensions identify media when a publisher omits its type.
 
 ## Feed backend
 
@@ -76,7 +76,11 @@ The responsive Vuetify shell lists categories and feeds in configuration order. 
 - `/categories/:categoryId` displays feeds assigned to one manual category, such as `/categories/news` and `/categories/uk-news`.
 - `/feeds/:feedId` displays one feed, such as `/feeds/the-guardian`.
 
-Unknown IDs and other unmatched paths show a not-found page. Article links open the original URL in a new tab. The shared page currently uses a stock Vuetify item list; full article cards, descriptions, and media rendering belong to step 5.
+Unknown IDs and other unmatched paths show a not-found page. Every reader view uses `ArticleList` and `ArticleCard` to display the source, publication date, sanitized description, media, and RSS item categories. Non-interactive card areas follow a real article link to the original URL in a new tab; description links and native media controls work independently. There are no wrapper article pages.
+
+Each card displays at most one image: the first usable description image, or the first image attachment when the description has none. Additional images, including size variants, are omitted. `ArticleMedia` displays lazy-loaded images and native audio/video controls without autoplay. Audio, video, and other attachments remain available. Unsupported attachments and failed media provide safe external links. Missing descriptions, dates, categories, or article URLs are handled without inventing content.
+
+Shared component defaults in `src/plugins/defaults.ts` standardize Vuetify buttons, cards, chips, alerts, and progress indicators. Shared classes in `src/styles/main.scss` handle card layout, description typography, focus indicators, responsive media, and phone spacing across all views.
 
 ### Hosting and direct links
 
@@ -164,6 +168,8 @@ npm run build
 - `npm run build-only`
 - `npm run type-check`
 - `npm test`
+- `npm run test:unit` — configuration, API, parsing, store, and routing tests
+- `npm run test:components` — shared card/list/media tests with Vitest and Vue Test Utils
 - `npm run lint`
 - `npm run lint:fix`
 

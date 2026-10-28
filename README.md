@@ -4,7 +4,7 @@ Scaffolded with Vuetify CLI.
 
 ## Feed configuration
 
-Edit `src/config/feeds.json` to maintain the feed list and manual categories. The file is bundled with the application; restart the development server or rebuild the deployed application after editing it.
+Edit `server/config/feeds.json` to maintain the feed list and manual categories. Configuration and validation live on the server. Restart the API after editing production configuration, then refresh the reader; no frontend rebuild is needed. The development API watches configuration changes automatically.
 
 ```json
 {
@@ -29,29 +29,42 @@ IDs use lowercase letters and numbers separated by single hyphens, such as `uk-n
 
 Manual categories determine category page membership. Categories supplied by individual RSS items are separate card metadata and do not change the manual categories. For the example above, The Guardian belongs to both News and UK News.
 
-Configuration is validated before the application starts. Invalid configuration stops startup with field-specific errors in the browser console. Run `npm test` to validate the checked-in configuration and exercise the feed pipeline and store. Reader pages are covered by later steps in `plans/implementation.md`.
+Configuration is loaded and validated by `server/config/index.ts` before the API starts. Invalid configuration stops server startup with field-specific errors in the server logs. The frontend receives only category IDs/names and feed IDs/names/category assignments from `/api/config`; upstream feed URLs are absent from this navigation response and the frontend bundle. Run `npm test` to validate the checked-in configuration and exercise the API, feed pipeline, and store.
 
 The tests use Node's built-in TypeScript support and jsdom; use Node.js 22.22.2+ or 24.15+.
 
 ## Feed pipeline
 
-The feed utilities in `src/feeds/` are available for the reader store to consume:
+All frontend requests to the backend live in `src/api/`: `config.ts` loads public navigation metadata, and `feeds.ts` handles feed requests, timeouts, API errors, and concurrent loading. XML parsing, description sanitization, media extraction, and sorting remain in `src/feeds/`.
 
-- `fetchFeed(feed)` fetches and normalizes one feed, returning either items or a typed, feed-specific error. Requests omit credentials and bypass the browser cache. The default timeout is 15 seconds and includes reading the response body.
+- `fetchFeed(feed)` requests `/api/feeds/:feedId` and normalizes the returned XML, yielding either items or a typed, feed-specific error. Requests omit credentials and bypass the browser cache. The browser timeout is 15 seconds and includes reading the response body.
 - `loadFeeds(feeds, options)` loads up to four feeds concurrently by default. Its optional `onResult` callback receives each result as it finishes; the final result array follows configuration order. There are no automatic retries, polling, or persistent caching.
-- `parseFeed(xml, feed)` parses RSS 0.9x/2.0 XML. Atom and RDF feeds return an explicit unsupported-format error. Item identity uses GUIDs when supplied and otherwise a deterministic combination of item fields; repeated identities are removed within a feed.
+- `parseFeed(xml, feed, sourceUrl)` parses RSS 0.9x/2.0 XML using the API-supplied upstream base URL. Atom and RDF feeds return an explicit unsupported-format error. Item identity uses GUIDs when supplied and otherwise a deterministic combination of item fields; repeated identities are removed within a feed.
 - `sortFeedItems(items, feeds)` returns a new newest-first array. Missing/invalid dates sort last; equal dates use feed configuration order followed by the original item order. Keep each feed's parsed item order when combining results.
 
 Descriptions retain allowlisted HTML formatting through DOMPurify. Links use HTTP(S) destinations and open safely in new tabs. Embedded images and native audio/video controls remain in sanitized descriptions without autoplay; matching enclosure/media URLs are omitted from the separate media array. Other enclosures become typed media or attachment links for the future card component.
 
-Fetching is browser-direct. A network error mentions possible CORS restrictions because browsers do not reliably distinguish those from other network failures. No proxy has been added.
+## Feed backend
+
+Feed queries run through a small Node.js/TypeScript API so upstream feeds do not need browser CORS support. The browser still parses XML and sanitizes descriptions. No additional runtime packages are required for the backend.
+
+- `GET /api/config` returns public navigation metadata without upstream URLs. Only the server loads and validates the local JSON configuration.
+- `GET /api/feeds/:feedId` accepts only IDs in `server/config/feeds.json`; request parameters cannot choose an arbitrary upstream URL.
+- Successful responses contain RSS XML and an `X-Feed-URL` header with the final upstream URL after redirects. The browser uses that URL to resolve relative article and media links.
+- Upstream requests have a 10-second timeout, including response reading, and a 5 MiB response limit. Upstream HTTP/network failures return HTTP 502; timeouts return HTTP 504, with typed JSON errors that the reader displays per feed.
+- The API omits credentials, forwards no upstream cookies, and returns `Cache-Control: no-store`. Each browser reload queries feeds again. There is no polling, retry loop, or persistent cache.
+
+`npm run dev` starts both Vite on `127.0.0.1:3000` and the API on `127.0.0.1:3001`. Vite proxies `/api` to the backend. The API watches source/config imports during development. `npm run preview` starts the API and Vite's build preview together after `npm run build`.
+
+`npm start` runs the API alone for production. Its runtime files live entirely in `server/`, including configuration; Node.js strips type-only imports of the public DTO types from `src/types/feed.ts`. Use Node.js with built-in TypeScript support. Set `FEED_PORT` to change the API port and `FEED_HOST` to change its bind address. Development/preview proxies follow `FEED_PORT`; the default local bind address is recommended behind a reverse proxy.
 
 ## Feed store and startup
 
-`src/main.ts` starts `useFeedStore().loadOnce(feedConfig)` after installing Pinia, without waiting for network requests before mounting the application. The store in `src/stores/feeds.ts` retains the first configuration and all feed results in memory for that application instance.
+`src/main.ts` starts `useFeedStore().loadOnce()` after installing Pinia, without waiting for network requests before mounting the application. The store first requests `/api/config`, then loads feed items by ID. It retains public navigation metadata and all feed results in memory for that application instance.
 
 - `feedStates[feedId]` exposes each feed's loading/success/error status, items, and error. Successful results become available independently while other feeds are still loading.
 - `hasStarted`, `isLoading`, `hasFinished`, and `errors` support overall loading and failure states. Finishing means all feeds have settled, including failures.
+- `isConfigLoading` and `configError` expose initial feed-list loading and failure independently. Reader pages wait for this request before deciding whether a category/feed exists.
 - `items`, `itemsForCategory(categoryId)`, and `itemsForFeed(feedId)` expose newest-first selections without fetching. Category membership uses manual feed assignments, including multiple categories per feed. Unknown IDs and empty categories return no items.
 - Overlapping and subsequent `loadOnce` calls reuse the initial load, including after a failure. Page navigation does not trigger refreshes. A full browser reload creates a new store and fetches feeds again; there is no automatic refresh or persistent cache.
 
@@ -67,9 +80,13 @@ Unknown IDs and other unmatched paths show a not-found page. Article links open 
 
 ### Hosting and direct links
 
-Vue Router uses HTML5 history. Configure the production host to serve `dist/index.html` for application routes such as `/categories/news` and `/feeds/the-guardian`, while serving existing assets normally. Without this fallback, opening or refreshing a nested URL may produce a server 404. For example, an Nginx server rooted at `dist/` can use:
+Vue Router uses HTML5 history. Configure the production host to serve `dist/index.html` for application routes such as `/categories/news` and `/feeds/the-guardian`, while serving existing assets normally. Route `/api/` to the running feed API on the same origin, before applying the SPA fallback. For example, an Nginx server rooted at `dist/` with the API running on its default port can use:
 
 ```nginx
+location /api/ {
+    proxy_pass http://127.0.0.1:3001;
+}
+
 location / {
     try_files $uri $uri/ /index.html;
 }
@@ -139,6 +156,9 @@ npm run build
 ## 🧪 Available Scripts
 
 - `npm run dev`
+- `npm run dev:api` — API only, with source watching
+- `npm run dev:web` — Vite only, when the API is already running
+- `npm start` — production API
 - `npm run build`
 - `npm run preview`
 - `npm run build-only`

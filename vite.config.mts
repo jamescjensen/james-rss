@@ -5,6 +5,10 @@ import Fonts from 'unplugin-fonts/vite'
 import { defineConfig } from 'vite'
 import Vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
 
+const feedProxy = {
+  '/api': { target: `http://127.0.0.1:${process.env.FEED_PORT ?? '3001'}`, changeOrigin: true },
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -52,5 +56,8 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    host: '127.0.0.1',
+    proxy: feedProxy,
   },
+  preview: { proxy: feedProxy },
 })

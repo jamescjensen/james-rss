@@ -1,13 +1,14 @@
-import type { FeedCategory, FeedConfig, FeedDefinition } from '../types/feed'
+import type { FeedCategory } from '../../src/types/feed'
+import type { ServerFeedConfig, ServerFeedDefinition } from './types'
 
 function isRecord (value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-export function validateFeedConfig (value: unknown): FeedConfig {
+export function validateFeedConfig (value: unknown): ServerFeedConfig {
   const errors: string[] = []
   const categories: FeedCategory[] = []
-  const feeds: FeedDefinition[] = []
+  const feeds: ServerFeedDefinition[] = []
 
   function requiredString (value: unknown, path: string): string {
     if (typeof value !== 'string' || value.trim() === '') {

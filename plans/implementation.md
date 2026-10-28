@@ -4,7 +4,7 @@
 
 Build a simple RSS reader using the existing Vue, TypeScript, Vue Router, Pinia, and Vuetify stack.
 
-- Maintain feeds and manually assigned categories in a repository-local JSON configuration file. Edit this file manually; changes take effect after restarting development or rebuilding the application.
+- Maintain feeds and manually assigned categories in `server/config/feeds.json`. Edit this file manually; the development API watches changes, while production changes take effect after restarting the API. Refresh the reader to receive updated navigation metadata; no frontend rebuild is needed.
 - Support an all-feeds page, a separate page for each manually defined category, and a separate page for each feed.
 - Sort every page by publication date, newest first.
 - Display each item in a shared card with its title, description, publication date, available media, and categories provided by the feed itself.
@@ -14,7 +14,7 @@ Build a simple RSS reader using the existing Vue, TypeScript, Vue Router, Pinia,
 
 ## Configuration and data model
 
-Add a typed configuration loader and a local file such as `src/config/feeds.json`:
+Keep the typed configuration loader and validation under `server/config/`, alongside `server/config/feeds.json`:
 
 ```json
 {
@@ -34,6 +34,7 @@ Add a typed configuration loader and a local file such as `src/config/feeds.json
 ```
 
 - Use stable IDs for route parameters and category references.
+- Validate configuration only on the server. Expose category IDs/names and feed IDs/names/category assignments through `/api/config`; do not include upstream feed URLs in the frontend model or bundle.
 - Validate unique category/feed IDs, required names, HTTP(S) feed URLs, and category references. Report configuration errors clearly.
 - Allow multiple categories per feed and feeds with no categories. Uncategorized feeds still appear on the all-feeds and individual-feed pages.
 - Keep manually assigned categories separate from item categories supplied by RSS. Manual categories determine page membership; RSS categories are card metadata.
@@ -42,8 +43,9 @@ Add a typed configuration loader and a local file such as `src/config/feeds.json
 
 ## Feed loading and normalization
 
-- Fetch configured feeds directly from the browser, initially without a backend or proxy. Revisit this decision if an actual configured feed blocks browser access through CORS.
-- Start a single loading operation per application load and retain its results in a Pinia store. Route changes filter existing results without refetching.
+- Fetch configured feeds through a Node.js/TypeScript API at `/api/feeds/:feedId`. Browser-direct requests failed during live checks, so feed fetching now runs on the server while XML normalization and HTML sanitization remain in the browser.
+- Accept only configured feed IDs; preserve the final upstream URL in `X-Feed-URL` so relative links and media resolve correctly. Apply an upstream request timeout and response size limit, and return typed per-feed errors. Proxy `/api` through Vite locally and through the production host on the same origin.
+- Start a single loading operation per application load: request public navigation metadata from `/api/config`, then load feed items by ID and retain results in a Pinia store. Route changes filter existing results without refetching. Show initial loading/configuration-failure states before resolving category/feed membership.
 - Load feeds independently with bounded concurrency and request timeouts so a slow or broken feed does not block successful feeds.
 - Parse RSS XML, including CDATA, standard item fields, media namespaces, and enclosure metadata. Detect malformed XML and unsupported feed formats with a useful feed-specific error.
 - Resolve relative article and media URLs against the feed URL, accounting for a declared base URL where present. Permit only appropriate HTTP(S) destinations.
@@ -52,7 +54,7 @@ Add a typed configuration loader and a local file such as `src/config/feeds.json
 - Read category metadata from each item's RSS category fields. Do not substitute manually configured categories for absent item metadata.
 - Preserve description formatting through a maintained HTML sanitizer with a restrictive allowlist. Remove executable content, unsafe URLs, event handlers, and embedded scripts. Apply safe new-tab behavior to links inside descriptions too.
 - Normalize supplied images, audio, and video from media fields, enclosures, and supported description markup. Avoid duplicating media already rendered in the description. Use native audio/video controls without autoplay; provide a safe attachment link for unsupported types.
-- Surface network, timeout, parsing, and possible browser access failures per feed while retaining successful results. Do not automatically retry or introduce a proxy in the initial implementation.
+- Surface network, timeout, HTTP, and parsing failures per feed while retaining successful results. Do not automatically retry.
 
 ## Routes and navigation
 
@@ -88,7 +90,7 @@ Add a typed configuration loader and a local file such as `src/config/feeds.json
 3. Add the Pinia store with one initial load, independent feed results, and route-independent state.
 4. Replace the starter screen with the responsive application shell and all-feeds, category, and feed routes.
 5. Build the shared item list/card and establish global Vuetify defaults and common states.
-6. Verify behavior with representative local feed fixtures and actual configured feeds. Document any observed browser access limitation before proposing a fetching architecture change.
+6. Verify behavior with representative local feed fixtures and actual configured feeds, including the backend request path, redirect URL preservation, and failure handling.
 7. Update project documentation with configuration, npm commands, deployment routing requirements, and known limitations.
 
 ## Verification and acceptance criteria
@@ -105,4 +107,4 @@ Add a typed configuration loader and a local file such as `src/config/feeds.json
 
 ## Initial exclusions
 
-No accounts, database, read/unread tracking, bookmarks, config editor, article wrapper pages, scheduled refresh, or persistent feed cache. A backend/proxy remains deferred until a configured feed demonstrates a browser access problem.
+No accounts, database, read/unread tracking, bookmarks, config editor, article wrapper pages, scheduled refresh, or persistent feed cache.

@@ -1,5 +1,6 @@
 import type { FeedDefinition, FeedError, FeedResult } from '../types/feed'
-import { FeedParseError, parseFeed } from './parse.ts'
+import { FeedParseError, parseFeed } from '../feeds/parse.ts'
+import { httpUrl } from '../feeds/url.ts'
 
 interface FetchOptions {
   fetch?: typeof fetch
@@ -14,8 +15,32 @@ interface LoadOptions extends FetchOptions {
 
 class HttpError extends Error {}
 class TimeoutError extends Error {}
+class ApiError extends Error {
+  readonly type: FeedError['type']
+
+  constructor (error: FeedError) {
+    super(error.message)
+    this.type = error.type
+  }
+}
+
+async function apiError (response: Response): Promise<Error> {
+  try {
+    const body = await response.json()
+    const error = body?.error
+    if (['network', 'http', 'timeout'].includes(error?.type) && typeof error?.message === 'string') {
+      return new ApiError(error)
+    }
+  } catch {
+    // A hosting proxy may return an HTML error instead of the feed API's JSON response.
+  }
+  return new HttpError(`HTTP ${response.status}`)
+}
 
 function errorType (error: unknown): FeedError['type'] {
+  if (error instanceof ApiError) {
+    return error.type
+  }
   if (error instanceof TimeoutError) {
     return 'timeout'
   }
@@ -41,24 +66,28 @@ export async function fetchFeed (feed: FeedDefinition, options: FetchOptions = {
       }, timeoutMs)
     })
     const load = async () => {
-      const response = await request(feed.url, {
+      const response = await request(`/api/feeds/${encodeURIComponent(feed.id)}`, {
         signal: controller.signal,
         credentials: 'omit',
         cache: 'no-store',
         headers: { Accept: 'application/rss+xml, application/xml, text/xml;q=0.9' },
       })
       if (!response.ok) {
-        throw new HttpError(`HTTP ${response.status}`)
+        throw await apiError(response)
       }
-      // Response.url accounts for HTTP redirects when resolving relative item URLs.
-      return parseFeed(await response.text(), feed, response.url || feed.url)
+      // The same-origin API URL is not the base for relative article and media links.
+      const sourceUrl = httpUrl(response.headers.get('X-Feed-URL'))
+      if (!sourceUrl) {
+        throw new FeedParseError('parse', 'Feed API did not provide a valid upstream URL')
+      }
+      return parseFeed(await response.text(), feed, sourceUrl)
     }
     return { feedId: feed.id, status: 'success', items: await Promise.race([load(), timeout]) }
   } catch (error) {
     const type = errorType(error)
     let detail = error instanceof Error ? error.message : 'Request failed'
-    if (type === 'network') {
-      detail = 'Request failed. Check the network and whether the feed permits browser access (CORS).'
+    if (type === 'network' && !(error instanceof ApiError)) {
+      detail = 'Could not reach the feed API. Check the connection and whether the backend is running.'
     }
     return { feedId: feed.id, status: 'error', error: { type, message: `${feed.name}: ${detail}` } }
   } finally {

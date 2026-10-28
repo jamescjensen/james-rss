@@ -6,7 +6,6 @@ export interface FeedCategory {
 export interface FeedDefinition {
   id: string
   name: string
-  url: string
   categoryIds: string[]
 }
 

@@ -82,7 +82,7 @@ function extractMedia (item: Element, base: string, embedded: Set<string>): Feed
 }
 
 /** Parse RSS 0.9x/2.0; other formats are reported explicitly rather than silently ignored. */
-export function parseFeed (xml: string, feed: FeedDefinition, sourceUrl = feed.url): FeedItem[] {
+export function parseFeed (xml: string, feed: FeedDefinition, sourceUrl: string): FeedItem[] {
   const document = new DOMParser().parseFromString(xml, 'application/xml')
   if (document.getElementsByTagNameNS('*', 'parsererror').length > 0) {
     throw new FeedParseError('parse', `Could not parse RSS XML for ${feed.name}`)

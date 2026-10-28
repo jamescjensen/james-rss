@@ -15,8 +15,8 @@ function setup () {
   const config: FeedConfig = {
     categories: [{ id: 'news', name: 'News' }, { id: 'uk-news', name: 'UK News' }, { id: 'empty', name: 'Empty' }],
     feeds: [
-      { id: 'guardian', name: 'The Guardian', url: 'https://example.com/guardian', categoryIds: ['news', 'uk-news'] },
-      { id: 'other', name: 'Other feed', url: 'https://example.com/other', categoryIds: ['news'] },
+      { id: 'guardian', name: 'The Guardian', categoryIds: ['news', 'uk-news'] },
+      { id: 'other', name: 'Other feed', categoryIds: ['news'] },
     ],
   }
   store.config = config

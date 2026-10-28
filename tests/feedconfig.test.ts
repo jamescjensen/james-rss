@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { validateFeedConfig } from '../src/config/validate.ts'
+import { validateFeedConfig } from '../server/config/validate.ts'
 
 function config () {
   return {
@@ -19,7 +19,7 @@ function config () {
 }
 
 test('the repository configuration is valid', () => {
-  const raw: unknown = JSON.parse(readFileSync(new URL('../src/config/feeds.json', import.meta.url), 'utf8'))
+  const raw: unknown = JSON.parse(readFileSync(new URL('../server/config/feeds.json', import.meta.url), 'utf8'))
   assert.doesNotThrow(() => validateFeedConfig(raw))
 })
 

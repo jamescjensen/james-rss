@@ -6,7 +6,6 @@
 
 // Composables
 import { createApp } from 'vue'
-import { feedConfig } from '@/config'
 // Plugins
 import { registerPlugins } from '@/plugins'
 import { useFeedStore } from '@/stores/feeds'
@@ -23,6 +22,6 @@ const app = createApp(App)
 
 registerPlugins(app)
 
-void useFeedStore().loadOnce(feedConfig)
+void useFeedStore().loadOnce()
 
 app.mount('#app')

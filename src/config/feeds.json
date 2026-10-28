@@ -1,0 +1,14 @@
+{
+  "categories": [
+    { "id": "news", "name": "News" },
+    { "id": "uk-news", "name": "UK News" }
+  ],
+  "feeds": [
+    {
+      "id": "the-guardian",
+      "name": "The Guardian",
+      "url": "https://www.theguardian.com/uk/rss",
+      "categoryIds": ["news", "uk-news"]
+    }
+  ]
+}
